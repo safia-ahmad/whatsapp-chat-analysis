@@ -1,6 +1,7 @@
 import streamlit as st
 import preprocesser
 import helper
+import matplotlib.pyplot as plt
 
 st.sidebar.title("WhatsApp Chat Analyzer 💬")
 uploaded_file = st.sidebar.file_uploader("Choose a file")
@@ -21,30 +22,51 @@ if uploaded_file is not None:
     selected_user = st.sidebar.selectbox("Show analysis wrt", user_list)
     if st.sidebar.button("show analysis"):
         num_messages, words, num_media, num_stickers, num_audio,num_links = helper.fetch_stats(selected_user, df)
-        col1, col2, col3, col4, col5,col6 = st.columns(6)
+
+        col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.header("Total Messages")
-            st.title(num_messages)
+            st.metric("Messages", num_messages)
 
         with col2:
-            st.header("Total Words")
-            st.title(words)
+            st.metric("Words", words)
+
         with col3:
-            st.header("Media")
-            st.title(num_media)
+            st.metric("Media", num_media)
+
+        col4, col5, col6 = st.columns(3)
 
         with col4:
-            st.header("Stickers")
-            st.title(num_stickers)
+            st.metric("Stickers", num_stickers)
 
         with col5:
-            st.header("Audio")
-            st.title(num_audio)
+            st.metric("Audio", num_audio)
 
         with col6:
-            st.header("Links")
-            st.title(num_links)
+            st.metric("Links", num_links)
 
+        # busiest users (only for overall)
+        if selected_user == 'Overall':
+            st.title('Most Busy Users')
+            x, new_df = helper.most_busy_users(df)
+            fig, ax = plt.subplots()
 
+            col1, col2 = st.columns(2)
 
+            with col1:
+                ax.bar(x.index, x.values, color='red')
+                plt.xticks(rotation='vertical')
+                st.pyplot(fig)
+
+            with col2:
+                st.dataframe(new_df)
+
+        # 👇 ALWAYS RUN WORDCLOUD (for all users)
+        st.title(f"WordCloud for {selected_user}")
+
+        df_wc = helper.create_wordcloud(selected_user, df)
+
+        fig, ax = plt.subplots()
+        ax.imshow(df_wc)
+        ax.axis('off')
+        st.pyplot(fig)
