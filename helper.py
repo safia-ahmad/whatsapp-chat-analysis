@@ -1,15 +1,15 @@
 from urlextract import URLExtract
-extract = URLExtract()
-
 from wordcloud import WordCloud
 import pandas as pd
 from collections import Counter
 import emoji
+from textblob import TextBlob
 
+extract = URLExtract()
 
+# ---------------- STOP WORDS ----------------
 with open('stop_hinglish.txt', 'r') as f:
     stop_words = f.read().split()
-
 
 
 def remove_stop_words(message):
@@ -20,6 +20,7 @@ def remove_stop_words(message):
     return " ".join(y)
 
 
+# ---------------- FETCH STATS ----------------
 def fetch_stats(selected_user, df):
 
     df['message'] = df['message'].astype(str)
@@ -33,9 +34,9 @@ def fetch_stats(selected_user, df):
     for message in df['message']:
         words.extend(message.split())
 
-    num_media = df[df['message'].str.contains('omitted', case=False, na=False)].shape[0]
-    num_stickers = df[df['message'].str.contains('sticker omitted', case=False, na=False)].shape[0]
-    num_audio = df[df['message'].str.contains('audio omitted', case=False, na=False)].shape[0]
+    num_media = df['message'].str.contains('omitted', case=False, na=False).sum()
+    num_stickers = df['message'].str.contains('sticker', case=False, na=False).sum()
+    num_audio = df['message'].str.contains('audio', case=False, na=False).sum()
 
     links = []
     for message in df['message']:
@@ -44,16 +45,15 @@ def fetch_stats(selected_user, df):
     return num_messages, len(words), num_media, num_stickers, num_audio, len(links)
 
 
+# ---------------- MOST BUSY USERS ----------------
 def most_busy_users(df):
     x = df['user'].value_counts().head()
 
-    df = round((df['user'].value_counts() / df.shape[0]) * 100, 2) \
-        .reset_index().rename(columns={'index': 'name', 'user': 'percent'})
-
-    return x, df
+    new_df = (df['user'].value_counts() / df.shape[0] * 100).round(2).reset_index()
+    return x, new_df
 
 
-
+# ---------------- WORDCLOUD ----------------
 def create_wordcloud(selected_user, df):
 
     df['message'] = df['message'].astype(str)
@@ -64,21 +64,19 @@ def create_wordcloud(selected_user, df):
     temp = df[df['user'] != 'group_notification']
     temp = temp[~temp['message'].str.contains('omitted', case=False, na=False)]
 
-
     temp['message'] = temp['message'].apply(remove_stop_words)
 
     wc = WordCloud(
-        width=500,
-        height=500,
+        width=800,
+        height=800,
         min_font_size=10,
         background_color='white'
     )
 
-    df_wc = wc.generate(temp['message'].str.cat(sep=" "))
-
-    return df_wc
+    return wc.generate(temp['message'].str.cat(sep=" "))
 
 
+# ---------------- MOST COMMON WORDS ----------------
 def most_common_words(selected_user, df):
 
     df['message'] = df['message'].astype(str)
@@ -89,30 +87,29 @@ def most_common_words(selected_user, df):
     temp = df[df['user'] != 'group_notification']
     temp = temp[~temp['message'].str.contains('omitted', case=False, na=False)]
 
-
     temp['message'] = temp['message'].apply(remove_stop_words)
 
     words = []
-
     for message in temp['message']:
         words.extend(message.split())
 
-    most_common_df = pd.DataFrame(Counter(words).most_common(20))
+    return pd.DataFrame(Counter(words).most_common(20))
 
-    return most_common_df
 
+# ---------------- EMOJI ----------------
 def emoji_helper(selected_user, df):
 
-        if selected_user != 'Overall':
-            df = df[df['user'] == selected_user]
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user]
 
-        emojis = []
-        for message in df['message']:
-            emojis.extend([c for c in message if c in emoji.EMOJI_DATA])
+    emojis = []
+    for message in df['message']:
+        emojis.extend([c for c in message if c in emoji.EMOJI_DATA])
 
-        emoji_df=pd.DataFrame(Counter(emojis).most_common(len(Counter(emojis))))
-        return emoji_df
+    return pd.DataFrame(Counter(emojis).most_common())
 
+
+# ---------------- MONTHLY TIMELINE ----------------
 def monthly_timeline(selected_user, df):
 
     if selected_user != 'Overall':
@@ -120,19 +117,79 @@ def monthly_timeline(selected_user, df):
 
     timeline = df.groupby(['year', 'month_num', 'month']).count()['message'].reset_index()
 
-    time = []
-    for i in range(timeline.shape[0]):
-        time.append(timeline['month'][i] + "-" + str(timeline['year'][i]))
-
-    timeline['time'] = time
+    timeline['time'] = timeline['month'] + "-" + timeline['year'].astype(str)
 
     return timeline
+
+
+# ---------------- DAILY TIMELINE ----------------
 def daily_timeline(selected_user, df):
 
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
+
     df['only_date'] = df['date'].dt.date
 
     daily_timeline = df.groupby('only_date').count()['message'].reset_index()
 
     return daily_timeline
+
+
+# ---------------- WEEK ACTIVITY ----------------
+def week_activity_map(selected_user, df):
+
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user]
+
+    return df['day_name'].value_counts()
+
+
+# ---------------- MONTH ACTIVITY ----------------
+def month_activity_map(selected_user, df):
+
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user]
+
+    return df['month'].value_counts()
+
+
+# ---------------- HEATMAP ----------------
+def activity_heatmap(selected_user, df):
+
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user]
+
+    heatmap = df.pivot_table(
+        index='day_name',
+        columns='period',
+        values='message',
+        aggfunc='count'
+    ).fillna(0)
+
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    heatmap = heatmap.reindex(days)
+
+    heatmap = heatmap.reindex(sorted(heatmap.columns), axis=1)
+
+    return heatmap
+
+
+# ---------------- SENTIMENT ----------------
+def sentiment_analysis(selected_user, df):
+
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user]
+
+    sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
+
+    for message in df['message']:
+        polarity = TextBlob(message).sentiment.polarity
+
+        if polarity > 0:
+            sentiments["Positive"] += 1
+        elif polarity < 0:
+            sentiments["Negative"] += 1
+        else:
+            sentiments["Neutral"] += 1
+
+    return pd.Series(sentiments)
