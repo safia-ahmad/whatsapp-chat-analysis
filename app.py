@@ -11,7 +11,6 @@ if uploaded_file is not None:
     data = bytes_data.decode("utf-8")
     df = preprocesser.preprocess(data)
 
-    st.dataframe(df)
 
     # fetch users
     user_list = df['user'].unique().tolist()
@@ -27,9 +26,10 @@ if uploaded_file is not None:
     if st.sidebar.button("show analysis"):
 
         num_messages, words, num_media, num_stickers, num_audio, num_links = helper.fetch_stats(selected_user, df)
-
+        st.title("Top Statistics")
         # top stats
         col1, col2, col3 = st.columns(3)
+
 
         with col1:
             st.metric("Messages", num_messages)
@@ -50,6 +50,29 @@ if uploaded_file is not None:
 
         with col6:
             st.metric("Links", num_links)
+
+        #MONTHLY TIMELINE
+        st.title("Monthly Timeline")
+        timeline = helper.monthly_timeline(selected_user, df)
+
+        fig, ax = plt.subplots()
+        ax.plot(timeline['time'], timeline['message'],color='green')
+
+        plt.xticks(rotation='vertical')
+
+        st.pyplot(fig)
+
+        #DAILY TIMELINE
+        st.title("Daily Timeline")
+
+        daily_timeline = helper.daily_timeline(selected_user, df)
+
+        fig, ax = plt.subplots()
+        ax.plot(daily_timeline['only_date'], daily_timeline['message'], color='black')
+
+        plt.xticks(rotation='vertical')
+
+        st.pyplot(fig)
 
         # busiest users
         if selected_user == 'Overall':
