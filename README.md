@@ -11,7 +11,7 @@ A Streamlit-based data analysis application that extracts meaningful insights fr
 
 ## 🚀 Live App
 
-[![Open App](https://img.shields.io/badge/Open%20App-Click%20Here-green?style=for-the-badge)](https://your-app-name.streamlit.app)
+[![Open App](https://img.shields.io/badge/Open%20App-Click%20Here-green?style=for-the-badge)](https://whatsapp-chat-analyz.streamlit.app/)
 
 ---
 
@@ -92,7 +92,7 @@ Derived features include:
 
 ✔ Real-time WhatsApp chat analysis  
 ✔ Supports multiple time formats  
-✔ Interactive charts and visualizations  
+✔ Interactive visualizations  
 ✔ Emoji and sentiment insights  
 ✔ Clean and responsive UI  
 
@@ -184,7 +184,7 @@ streamlit run app.py
 ## 👤 Author
 
 Safia Ahmad  
-BCA  
+BCA
 
 ---
 
