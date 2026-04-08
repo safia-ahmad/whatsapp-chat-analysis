@@ -13,6 +13,8 @@ A Streamlit-based data analysis application that extracts meaningful insights fr
 
 https://whatsapp-chat-analyz.streamlit.app/
 
+(copy paste this on google)
+
 ---
 
 ## 📸 Screenshots
