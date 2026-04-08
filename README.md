@@ -184,7 +184,7 @@ streamlit run app.py
 ## 👤 Author
 
 Safia Ahmad  
-B.Tech – Computer Science  
+BCA  
 
 ---
 
